@@ -75,12 +75,14 @@ export default function ElectionDetailsPage({
   }, []);
 
   useEffect(() => {
-    if (!db || !params.id) return;
+    if (!params.id) return;
+    const firestore = db;
+    if (!firestore) return;
     const loadElection = async () => {
       setLoadingElection(true);
       setError(null);
       try {
-        const docSnap = await getDoc(doc(db, "elections", params.id));
+        const docSnap = await getDoc(doc(firestore, "elections", params.id));
         if (!docSnap.exists()) {
           setElection(null);
           return;
@@ -100,9 +102,11 @@ export default function ElectionDetailsPage({
   }, [params.id]);
 
   useEffect(() => {
-    if (!db || !user || !params.id) return;
+    if (!user || !params.id) return;
+    const firestore = db;
+    if (!firestore) return;
     const checkVote = async () => {
-      const voteDoc = doc(db, "votes", `${params.id}_${user.uid}`);
+      const voteDoc = doc(firestore, "votes", `${params.id}_${user.uid}`);
       const voteSnap = await getDoc(voteDoc);
       setHasVoted(voteSnap.exists());
     };
@@ -171,14 +175,16 @@ export default function ElectionDetailsPage({
     }
 
     try {
-      await runTransaction(db, async (transaction) => {
-        const voteRef = doc(db, "votes", `${election.id}_${user.uid}`);
+      const firestore = db;
+      if (!firestore) return;
+      await runTransaction(firestore, async (transaction) => {
+        const voteRef = doc(firestore, "votes", `${election.id}_${user.uid}`);
         const voteSnap = await transaction.get(voteRef);
         if (voteSnap.exists()) {
           throw new Error("ALREADY_VOTED");
         }
 
-        const resultsRef = doc(db, "results", election.id);
+        const resultsRef = doc(firestore, "results", election.id);
         const resultsSnap = await transaction.get(resultsRef);
         if (!resultsSnap.exists()) {
           throw new Error("RESULTS_MISSING");
@@ -216,12 +222,14 @@ export default function ElectionDetailsPage({
   };
 
   const loadResults = async () => {
-    if (!db || !election) return;
+    if (!election) return;
+    const firestore = db;
+    if (!firestore) return;
     setLoadingResults(true);
     setError(null);
     try {
       const votesQuery = query(
-        collection(db, "votes"),
+        collection(firestore, "votes"),
         where("electionId", "==", election.id)
       );
       const votesSnapshot = await getDocs(votesQuery);
@@ -271,11 +279,13 @@ export default function ElectionDetailsPage({
   }, []);
 
   const closeAndPublish = async () => {
-    if (!db || !election) return;
+    if (!election) return;
+    const firestore = db;
+    if (!firestore) return;
     setPublishing(true);
     setError(null);
     try {
-      const resultsRef = doc(db, "results", election.id);
+      const resultsRef = doc(firestore, "results", election.id);
       const resultsSnap = await getDoc(resultsRef);
       let counts = election.candidates.reduce<Record<string, number>>(
         (acc, candidate) => {
@@ -302,7 +312,7 @@ export default function ElectionDetailsPage({
       if (needsRecount) {
         const votesSnapshot = await getDocs(
           query(
-            collection(db, "votes"),
+            collection(firestore, "votes"),
             where("electionId", "==", election.id)
           )
         );
@@ -319,7 +329,7 @@ export default function ElectionDetailsPage({
         });
       }
 
-      await updateDoc(doc(db, "elections", election.id), {
+      await updateDoc(doc(firestore, "elections", election.id), {
         isClosed: true,
         resultsPublished: true,
       });
@@ -352,15 +362,17 @@ export default function ElectionDetailsPage({
   };
 
   const reopenVoting = async () => {
-    if (!db || !election) return;
+    if (!election) return;
+    const firestore = db;
+    if (!firestore) return;
     setSavingStatus(true);
     setError(null);
     try {
-      await updateDoc(doc(db, "elections", election.id), {
+      await updateDoc(doc(firestore, "elections", election.id), {
         isClosed: false,
       });
       await setDoc(
-        doc(db, "results", election.id),
+        doc(firestore, "results", election.id),
         {
           electionId: election.id,
           title: election.title,
