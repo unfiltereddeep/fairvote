@@ -25,12 +25,14 @@ export default function PublicResultsPage({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!db || !params.id) return;
+    if (!params.id) return;
+    const firestore = db;
+    if (!firestore) return;
     const loadResults = async () => {
       setLoadingResults(true);
       setError(null);
       try {
-        const docSnap = await getDoc(doc(db, "results", params.id));
+        const docSnap = await getDoc(doc(firestore, "results", params.id));
         if (!docSnap.exists()) {
           setResultsDoc(null);
           return;
