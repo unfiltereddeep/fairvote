@@ -426,143 +426,6 @@ export default function Home() {
 
         {user ? (
           <>
-            <div className="grid">
-              <section className="card">
-                <h2>Create a voting post</h2>
-                <form className="stack" onSubmit={handleCreateElection}>
-                  <div className="field">
-                    <label>Title</label>
-                    <input
-                      className="input"
-                      value={title}
-                      onChange={(event) => setTitle(event.target.value)}
-                      placeholder="Team Lead Election 2026"
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Max selections per voter</label>
-                    <input
-                      className="input"
-                      type="number"
-                      min={1}
-                      value={maxSelections}
-                      onChange={(event) =>
-                        setMaxSelections(Number(event.target.value))
-                      }
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Candidate names (one per line)</label>
-                    <textarea
-                      className="textarea"
-                      value={candidatesInput}
-                      onChange={(event) => setCandidatesInput(event.target.value)}
-                      placeholder={"Ava Patel\nNoah Carter\nLiam Chen"}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Eligible voter emails (one per line)</label>
-                    <textarea
-                      className="textarea"
-                      value={eligibleInput}
-                      onChange={(event) => setEligibleInput(event.target.value)}
-                      placeholder={"voter1@email.com\nvoter2@email.com"}
-                    />
-                  </div>
-                  <button className="button" disabled={creating}>
-                    {creating ? "Creating..." : "Create voting post"}
-                  </button>
-                </form>
-              </section>
-
-              <section className="card">
-                <h2>Your voting posts</h2>
-                <p className="muted">
-                  See results and attendance. Votes are anonymous.
-                </p>
-                <div className="list">
-                  {myElections.length === 0 && (
-                    <span className="muted">
-                      No posts yet. Create your first election.
-                    </span>
-                  )}
-                  {myElections.map((election) => {
-                    const currentResults = results[election.id];
-                    return (
-                      <div key={election.id} className="election-card">
-                        <div className="stack">
-                          <strong>{election.title}</strong>
-                          <span className="tag">
-                            {election.candidates.length} candidates • Max{" "}
-                            {election.maxSelections} votes per voter •{" "}
-                            {election.eligibleEmails.length} eligible
-                          </span>
-                          <div className="row">
-                            <Link
-                              className="button secondary"
-                              href={`/elections/${election.id}`}
-                            >
-                              Open details
-                            </Link>
-                            <Link
-                              className="button secondary"
-                              href={`/elections/${election.id}/results`}
-                            >
-                              Public results
-                            </Link>
-                            <span className="tag">Shareable URL ready</span>
-                          </div>
-                          <button
-                            className="button secondary"
-                            onClick={() => loadResults(election)}
-                            disabled={loadingResults[election.id]}
-                          >
-                            {loadingResults[election.id]
-                              ? "Loading results..."
-                              : "Load results"}
-                          </button>
-                          {currentResults && (
-                            <div className="stack">
-                              <div>
-                                <strong>Results</strong>
-                                <div className="list">
-                                  {Object.entries(currentResults.counts).map(
-                                    ([candidate, count]) => (
-                                      <div key={candidate} className="row">
-                                        <span>{candidate}</span>
-                                        <span className="tag">{count} votes</span>
-                                      </div>
-                                    )
-                                  )}
-                                </div>
-                                <span className="muted">
-                                  Total votes cast: {currentResults.totalVotes}
-                                </span>
-                              </div>
-                              <div>
-                                <strong>Voters who submitted</strong>
-                                <div className="list">
-                                  {currentResults.voters.length === 0 ? (
-                                    <span className="muted">No votes yet.</span>
-                                  ) : (
-                                    currentResults.voters.map((email) => (
-                                      <span key={email} className="tag">
-                                        {email}
-                                      </span>
-                                    ))
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            </div>
-
             <section className="card">
               <h2>Participate in voting</h2>
               <p className="muted">
@@ -651,6 +514,143 @@ export default function Home() {
                 })}
               </div>
             </section>
+
+            <div className="grid">
+              <section className="card">
+                <h2>Your voting posts</h2>
+                <p className="muted">
+                  See results and attendance. Votes are anonymous.
+                </p>
+                <div className="list">
+                  {myElections.length === 0 && (
+                    <span className="muted">
+                      No posts yet. Create your first election.
+                    </span>
+                  )}
+                  {myElections.map((election) => {
+                    const currentResults = results[election.id];
+                    return (
+                      <div key={election.id} className="election-card">
+                        <div className="stack">
+                          <strong>{election.title}</strong>
+                          <span className="tag">
+                            {election.candidates.length} candidates • Max{" "}
+                            {election.maxSelections} votes per voter •{" "}
+                            {election.eligibleEmails.length} eligible
+                          </span>
+                          <div className="row">
+                            <Link
+                              className="button secondary"
+                              href={`/elections/${election.id}`}
+                            >
+                              Open details
+                            </Link>
+                            <Link
+                              className="button secondary"
+                              href={`/elections/${election.id}/results`}
+                            >
+                              Public results
+                            </Link>
+                            <span className="tag">Shareable URL ready</span>
+                          </div>
+                          <button
+                            className="button secondary"
+                            onClick={() => loadResults(election)}
+                            disabled={loadingResults[election.id]}
+                          >
+                            {loadingResults[election.id]
+                              ? "Loading results..."
+                              : "Load results"}
+                          </button>
+                          {currentResults && (
+                            <div className="stack">
+                              <div>
+                                <strong>Results</strong>
+                                <div className="list">
+                                  {Object.entries(currentResults.counts).map(
+                                    ([candidate, count]) => (
+                                      <div key={candidate} className="row">
+                                        <span>{candidate}</span>
+                                        <span className="tag">{count} votes</span>
+                                      </div>
+                                    )
+                                  )}
+                                </div>
+                                <span className="muted">
+                                  Total votes cast: {currentResults.totalVotes}
+                                </span>
+                              </div>
+                              <div>
+                                <strong>Voters who submitted</strong>
+                                <div className="list">
+                                  {currentResults.voters.length === 0 ? (
+                                    <span className="muted">No votes yet.</span>
+                                  ) : (
+                                    currentResults.voters.map((email) => (
+                                      <span key={email} className="tag">
+                                        {email}
+                                      </span>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="card">
+                <h2>Create a voting post</h2>
+                <form className="stack" onSubmit={handleCreateElection}>
+                  <div className="field">
+                    <label>Title</label>
+                    <input
+                      className="input"
+                      value={title}
+                      onChange={(event) => setTitle(event.target.value)}
+                      placeholder="Team Lead Election 2026"
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Max selections per voter</label>
+                    <input
+                      className="input"
+                      type="number"
+                      min={1}
+                      value={maxSelections}
+                      onChange={(event) =>
+                        setMaxSelections(Number(event.target.value))
+                      }
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Candidate names (one per line)</label>
+                    <textarea
+                      className="textarea"
+                      value={candidatesInput}
+                      onChange={(event) => setCandidatesInput(event.target.value)}
+                      placeholder={"Ava Patel\nNoah Carter\nLiam Chen"}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Eligible voter emails (one per line)</label>
+                    <textarea
+                      className="textarea"
+                      value={eligibleInput}
+                      onChange={(event) => setEligibleInput(event.target.value)}
+                      placeholder={"voter1@email.com\nvoter2@email.com"}
+                    />
+                  </div>
+                  <button className="button" disabled={creating}>
+                    {creating ? "Creating..." : "Create voting post"}
+                  </button>
+                </form>
+              </section>
+            </div>
           </>
         ) : (
           <section className="card">
