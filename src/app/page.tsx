@@ -90,12 +90,13 @@ export default function Home() {
       setEligibleElections([]);
       return;
     }
+    const firestore = db;
 
     const load = async () => {
       setError(null);
       try {
         const myQuery = query(
-          collection(db, "elections"),
+          collection(firestore, "elections"),
           where("createdByUid", "==", user.uid),
           orderBy("createdAt", "desc")
         );
@@ -112,7 +113,7 @@ export default function Home() {
           return;
         }
         const eligibleQuery = query(
-          collection(db, "elections"),
+          collection(firestore, "elections"),
           where("eligibleEmails", "array-contains", email),
           orderBy("createdAt", "desc")
         );
@@ -126,7 +127,7 @@ export default function Home() {
         const status: Record<string, boolean> = {};
         await Promise.all(
           eligibleItems.map(async (election) => {
-            const voteDoc = doc(db, "votes", `${election.id}_${user.uid}`);
+            const voteDoc = doc(firestore, "votes", `${election.id}_${user.uid}`);
             const voteSnap = await getDoc(voteDoc);
             status[election.id] = voteSnap.exists();
           })
@@ -169,6 +170,7 @@ export default function Home() {
     setError(null);
     setNotice(null);
     if (!db || !user) return;
+    const firestore = db;
 
     const candidates = uniqueList(candidatesInput.split("\n")).map((item) =>
       item.trim()
@@ -196,7 +198,7 @@ export default function Home() {
 
     setCreating(true);
     try {
-      const newDoc = await addDoc(collection(db, "elections"), {
+      const newDoc = await addDoc(collection(firestore, "elections"), {
         title: title.trim(),
         createdByUid: user.uid,
         createdByEmail: user.email ?? "",
@@ -207,7 +209,7 @@ export default function Home() {
         resultsPublished: false,
         createdAt: serverTimestamp(),
       });
-      await setDoc(doc(db, "results", newDoc.id), {
+      await setDoc(doc(firestore, "results", newDoc.id), {
         electionId: newDoc.id,
         title: title.trim(),
         candidates,
@@ -254,6 +256,7 @@ export default function Home() {
     setError(null);
     setNotice(null);
     if (!db || !user) return;
+    const firestore = db;
     if (election.isClosed) {
       setError("Voting is closed for this election.");
       return;
@@ -268,14 +271,14 @@ export default function Home() {
     }
 
     try {
-      await runTransaction(db, async (transaction) => {
-        const voteRef = doc(db, "votes", `${election.id}_${user.uid}`);
+      await runTransaction(firestore, async (transaction) => {
+        const voteRef = doc(firestore, "votes", `${election.id}_${user.uid}`);
         const voteSnap = await transaction.get(voteRef);
         if (voteSnap.exists()) {
           throw new Error("ALREADY_VOTED");
         }
 
-        const resultsRef = doc(db, "results", election.id);
+        const resultsRef = doc(firestore, "results", election.id);
         const resultsSnap = await transaction.get(resultsRef);
         if (!resultsSnap.exists()) {
           throw new Error("RESULTS_MISSING");
@@ -314,10 +317,11 @@ export default function Home() {
 
   const loadResults = async (election: Election) => {
     if (!db) return;
+    const firestore = db;
     setLoadingResults((prev) => ({ ...prev, [election.id]: true }));
     try {
       const votesQuery = query(
-        collection(db, "votes"),
+        collection(firestore, "votes"),
         where("electionId", "==", election.id)
       );
       const votesSnapshot = await getDocs(votesQuery);
