@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 
 type PublicResultsDoc = {
@@ -28,27 +28,29 @@ export default function PublicResultsPage() {
     if (!electionId) return;
     const firestore = db;
     if (!firestore) return;
-    const loadResults = async () => {
-      setLoadingResults(true);
-      setError(null);
-      try {
-        const docSnap = await getDoc(doc(firestore, "results", electionId));
+    setLoadingResults(true);
+    setError(null);
+    const unsubscribe = onSnapshot(
+      doc(firestore, "results", electionId),
+      (docSnap) => {
         if (!docSnap.exists()) {
           setResultsDoc(null);
+          setLoadingResults(false);
           return;
         }
         setResultsDoc({
           id: docSnap.id,
           ...(docSnap.data() as Omit<PublicResultsDoc, "id">),
         });
-      } catch (err) {
+        setLoadingResults(false);
+      },
+      () => {
         setError("Failed to load results.");
-      } finally {
         setLoadingResults(false);
       }
-    };
+    );
 
-    void loadResults();
+    return () => unsubscribe();
   }, [electionId]);
 
   const configBanner = useMemo(() => {
@@ -109,6 +111,7 @@ export default function PublicResultsPage() {
             {resultsDoc.isPublished && (
               <span className="pill">Results published</span>
             )}
+            {resultsDoc.isPublished && <span className="pill">Live updates</span>}
           </div>
         </section>
 
