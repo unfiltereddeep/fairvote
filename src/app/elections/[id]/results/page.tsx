@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
@@ -15,24 +16,23 @@ type PublicResultsDoc = {
   isClosed?: boolean;
 };
 
-export default function PublicResultsPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function PublicResultsPage() {
+  const params = useParams<{ id?: string }>();
+  const electionId =
+    typeof params?.id === "string" ? params.id : params?.id?.[0];
   const [loadingResults, setLoadingResults] = useState(true);
   const [resultsDoc, setResultsDoc] = useState<PublicResultsDoc | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!params.id) return;
+    if (!electionId) return;
     const firestore = db;
     if (!firestore) return;
     const loadResults = async () => {
       setLoadingResults(true);
       setError(null);
       try {
-        const docSnap = await getDoc(doc(firestore, "results", params.id));
+        const docSnap = await getDoc(doc(firestore, "results", electionId));
         if (!docSnap.exists()) {
           setResultsDoc(null);
           return;
@@ -49,7 +49,7 @@ export default function PublicResultsPage({
     };
 
     void loadResults();
-  }, [params.id]);
+  }, [electionId]);
 
   const configBanner = useMemo(() => {
     if (isFirebaseConfigured) return null;

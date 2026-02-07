@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { User } from "firebase/auth";
 import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
@@ -39,11 +40,10 @@ type Results = {
 
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
 
-export default function ElectionDetailsPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function ElectionDetailsPage() {
+  const params = useParams<{ id?: string }>();
+  const electionId =
+    typeof params?.id === "string" ? params.id : params?.id?.[0];
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,14 +75,14 @@ export default function ElectionDetailsPage({
   }, []);
 
   useEffect(() => {
-    if (!params.id) return;
+    if (!electionId) return;
     const firestore = db;
     if (!firestore) return;
     const loadElection = async () => {
       setLoadingElection(true);
       setError(null);
       try {
-        const docSnap = await getDoc(doc(firestore, "elections", params.id));
+        const docSnap = await getDoc(doc(firestore, "elections", electionId));
         if (!docSnap.exists()) {
           setElection(null);
           return;
@@ -99,24 +99,25 @@ export default function ElectionDetailsPage({
     };
 
     void loadElection();
-  }, [params.id]);
+  }, [electionId]);
 
   useEffect(() => {
-    if (!user || !params.id) return;
+    if (!user || !electionId) return;
     const firestore = db;
     if (!firestore) return;
     const checkVote = async () => {
-      const voteDoc = doc(firestore, "votes", `${params.id}_${user.uid}`);
+      const voteDoc = doc(firestore, "votes", `${electionId}_${user.uid}`);
       const voteSnap = await getDoc(voteDoc);
       setHasVoted(voteSnap.exists());
     };
     void checkVote();
-  }, [user, params.id]);
+  }, [user, electionId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setShareUrl(`${window.location.origin}/elections/${params.id}`);
-  }, [params.id]);
+    if (!electionId) return;
+    setShareUrl(`${window.location.origin}/elections/${electionId}`);
+  }, [electionId]);
 
   const userEmail = user?.email ? normalizeEmail(user.email) : "";
   const isOwner = Boolean(

@@ -44,6 +44,18 @@ const normalizeEmail = (value: string) => value.trim().toLowerCase();
 const uniqueList = (items: string[]) =>
   Array.from(new Set(items.map((item) => item.trim()).filter(Boolean)));
 
+const withTimeout = async <T,>(promise: Promise<T>, ms: number) => {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error("REQUEST_TIMEOUT")), ms);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+};
+
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -134,7 +146,12 @@ export default function Home() {
         );
         setVoteStatus(status);
       } catch (err) {
-        setError("Failed to load elections. Please refresh and try again.");
+        if (err instanceof Error) {
+          setError(err.message);
+          console.error("Load elections failed:", err);
+        } else {
+          setError("Failed to load elections. Please refresh and try again.");
+        }
       }
     };
 
@@ -169,7 +186,10 @@ export default function Home() {
     event.preventDefault();
     setError(null);
     setNotice(null);
-    if (!db || !user) return;
+    if (!db || !user) {
+      setError("You must be signed in to create a voting post.");
+      return;
+    }
     const firestore = db;
 
     const candidates = uniqueList(candidatesInput.split("\n")).map((item) =>
@@ -198,31 +218,37 @@ export default function Home() {
 
     setCreating(true);
     try {
-      const newDoc = await addDoc(collection(firestore, "elections"), {
-        title: title.trim(),
-        createdByUid: user.uid,
-        createdByEmail: user.email ?? "",
-        maxSelections,
-        candidates,
-        eligibleEmails,
-        isClosed: false,
-        resultsPublished: false,
-        createdAt: serverTimestamp(),
-      });
-      await setDoc(doc(firestore, "results", newDoc.id), {
-        electionId: newDoc.id,
-        title: title.trim(),
-        candidates,
-        counts: candidates.reduce<Record<string, number>>((acc, candidate) => {
-          acc[candidate] = 0;
-          return acc;
-        }, {}),
-        totalVotes: 0,
-        isPublished: false,
-        isClosed: false,
-        createdByUid: user.uid,
-        updatedAt: serverTimestamp(),
-      });
+      const newDoc = await withTimeout(
+        addDoc(collection(firestore, "elections"), {
+          title: title.trim(),
+          createdByUid: user.uid,
+          createdByEmail: user.email ?? "",
+          maxSelections,
+          candidates,
+          eligibleEmails,
+          isClosed: false,
+          resultsPublished: false,
+          createdAt: serverTimestamp(),
+        }),
+        15000
+      );
+      await withTimeout(
+        setDoc(doc(firestore, "results", newDoc.id), {
+          electionId: newDoc.id,
+          title: title.trim(),
+          candidates,
+          counts: candidates.reduce<Record<string, number>>((acc, candidate) => {
+            acc[candidate] = 0;
+            return acc;
+          }, {}),
+          totalVotes: 0,
+          isPublished: false,
+          isClosed: false,
+          createdByUid: user.uid,
+          updatedAt: serverTimestamp(),
+        }),
+        15000
+      );
       setTitle("");
       setMaxSelections(1);
       setCandidatesInput("");
@@ -230,7 +256,16 @@ export default function Home() {
       setNotice("Election created. Redirecting to details...");
       router.push(`/elections/${newDoc.id}`);
     } catch (err) {
-      setError("Failed to create election. Please try again.");
+      if (err instanceof Error && err.message === "REQUEST_TIMEOUT") {
+        setError(
+          "Create request timed out. Check your Firestore setup and network, then try again."
+        );
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Failed to create election. Please try again.");
+      }
+      console.error("Create election failed:", err);
     } finally {
       setCreating(false);
     }
