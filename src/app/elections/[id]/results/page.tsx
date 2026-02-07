@@ -111,32 +111,35 @@ export default function PublicResultsPage() {
             {resultsDoc.isPublished && (
               <span className="pill">Results published</span>
             )}
-            {resultsDoc.isPublished && <span className="pill">Live updates</span>}
+            <span className="pill">Live updates</span>
+            {!resultsDoc.isPublished && (
+              <span className="pill">Unofficial</span>
+            )}
           </div>
         </section>
 
         <section className="card">
           <h2>Results</h2>
           {!resultsDoc.isPublished && (
-            <span className="muted">Results are not published yet.</span>
+            <span className="muted">
+              Live counts are visible, but results are not published yet.
+            </span>
           )}
-          {resultsDoc.isPublished && (
-            <div className="stack">
-              <div className="list">
-                {Object.entries(resultsDoc.counts ?? {}).map(
-                  ([candidate, count]) => (
-                    <div key={candidate} className="row">
-                      <span>{candidate}</span>
-                      <span className="tag">{count} votes</span>
-                    </div>
-                  )
-                )}
-              </div>
-              <span className="muted">
-                Total votes cast: {resultsDoc.totalVotes ?? 0}
-              </span>
+          <div className="stack">
+            <div className="list">
+              {Object.entries(resultsDoc.counts ?? {}).map(
+                ([candidate, count]) => (
+                  <div key={candidate} className="row">
+                    <span>{candidate}</span>
+                    <span className="tag">{count} votes</span>
+                  </div>
+                )
+              )}
             </div>
-          )}
+            <span className="muted">
+              Total votes cast: {resultsDoc.totalVotes ?? 0}
+            </span>
+          </div>
         </section>
       </div>
     </div>
